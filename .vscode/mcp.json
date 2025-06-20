@@ -1,0 +1,22 @@
+{
+    "servers": {
+        "mcp-omnifocus": {
+            "type": "stdio",
+            "command": "uv",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/",
+                "python",
+                "-m",
+                "mcp_omnifocus",
+            ],
+            "dev": {
+                "watch": "src/**/*.py",
+                "debug": {
+                    "type": "python"
+                }
+            }
+        }
+    }
+}
