@@ -126,6 +126,40 @@ def create_task(
     return omnifocus.create_task(task_name=name, task_note=note)
 
 
+@mcp.tool
+def list_tasks_by_project(
+    project_id: Annotated[str, Field(description="The ID of the project to list tasks for")],
+    task_status: Annotated[
+        list[omnifocus.TaskStatus] | None,
+        Field(
+            description="The status of the tasks to list. If None, it is the equivelant "
+            "of requesting available and unblocked tasks ['Available', 'Next', 'Overdue', 'DueSoon']."
+        ),
+    ] = None,
+) -> list[dict[str, str]]:
+    """List all tasks in a specific project."""
+    if task_status is None:
+        task_status = ["Available", "Next", "Overdue", "DueSoon"]
+    return omnifocus.list_tasks_by_project(project_id, task_status=task_status)
+
+
+@mcp.tool
+def list_tasks_by_tag(
+    tag_id: Annotated[str, Field(description="The ID of the tag to list tasks for")],
+    task_status: Annotated[
+        list[omnifocus.TaskStatus] | None,
+        Field(
+            description="The status of the tasks to list. If None, it is the equivelant "
+            "of requesting available and unblocked tasks ['Available', 'Next', 'Overdue', 'DueSoon']."
+        ),
+    ] = None,
+) -> list[dict[str, str]]:
+    """List all tasks with a specific tag."""
+    if task_status is None:
+        task_status = ["Available", "Next", "Overdue", "DueSoon"]
+    return omnifocus.list_tasks_by_tag(tag_id, task_status=task_status)
+
+
 @mcp.prompt
 def process_inbox() -> str:
     """Process tasks in the OmniFocus Inbox."""
@@ -133,11 +167,14 @@ def process_inbox() -> str:
     You are an assistant for processing my GTD inbox in OmniFocus. For each task in my inbox:
     
     1. Review the task name and note.
-    2. Suggest the most relevant existing project to assigne the task to. If no suitable project exists, propose a new project name.
+    2. Suggest the most relevant existing project to assign the task to. Review the project notes and competed tasks to determine the purpose of a project. If no suitable project exists, propose a new project name.
     3. Suggest the most relevant existing tag to assign the task to. If no suitable tag exists, propose a new tag name.
+    4. Provide a summary of the task, including the suggested project and tag.
+    5. Prompt the user to confirm the suggested project and tag or if they want to create a new project or tag.
+    6. If the user confirms, update the task with the suggested project and tag.
     
     Use the #list_inbox tool to get the list of tasks in the inbox.
-    Use the tools #list_projects and #list_tags to get the list of existing projects and tags.
+    Use the tools #list_projects, #list_tags, #list_tasks_by_project, and #list_tasks_by_tag to get the list of existing projects and tags and their tasks.
     Use the #update_task tool to update the task with the suggested project and tag.
     """)
 

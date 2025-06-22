@@ -1,7 +1,10 @@
 from string import Template
 from textwrap import dedent
+from typing import Literal
 
 from mcp_omnifocus.utils.scripting import evaluate_javascript
+
+TaskStatus = Literal["Available", "Blocked", "Completed", "Dropped", "DueSoon", "Next", "Overdue"]
 
 __common_functions__ = dedent("""
 function projectStatusToString(status) {
@@ -88,6 +91,13 @@ function formatTask(task) {
         tags: task.tags ? task.tags.map(tt => tt.name) : [],
         note: task.note
     };
+}
+                              
+function taskStatusFilter(task, allowedStatuses) {
+    if (!allowedStatuses || allowedStatuses.length === 0) {
+        return true;
+    }
+    return allowedStatuses.includes(taskStatusToString(task.taskStatus));
 }
 """)
 
@@ -500,5 +510,93 @@ def create_task(task_name: str, task_note: str | None = None) -> dict[str, str]:
             __common_functions__=__common_functions__,
             task_name=task_name,
             task_note=f'"{task_note}"' if task_note else "null",
+        )
+    )
+
+
+def list_tasks_by_project(project_id: str, task_status: list[TaskStatus] | None = None) -> list[dict[str, str]]:
+    """List all tasks in a specific project in OmniFocus.
+
+    Args:
+        project_id: The ID of the project to filter tasks by.
+        task_status: A list of task statuses to filter by. If None, all tasks are returned.
+
+    Returns:
+        A list of dictionaries containing task names, ids, project ids, and tag ids.
+    """
+    script = Template(
+        dedent("""
+    ${__common_functions__}
+    
+    (() => {
+        let project = Project.byIdentifier("${project_id}");
+        const allowedStatuses = ${task_status};
+
+        if (!project) {
+            throw "Could not find project: " + project_id.toString();
+        }
+
+        return project.tasks
+            .filter(task => taskStatusFilter(task, allowedStatuses))
+            .map((task) => {
+                try {
+                    return formatTask(task);
+                } catch (e) {
+                    return null;
+                }
+            }).filter(Boolean);
+    })();
+    """)
+    )
+
+    return evaluate_javascript(
+        script.substitute(
+            __common_functions__=__common_functions__,
+            project_id=project_id,
+            task_status=f"[{', '.join([f'"{status}"' for status in task_status])}]" if task_status else "null",
+        )
+    )
+
+
+def list_tasks_by_tag(tag_id: str, task_status: list[TaskStatus] | None = None) -> list[dict[str, str]]:
+    """List all tasks with a specific tag in OmniFocus.
+
+    Args:
+        tag_id: The ID of the tag to filter tasks by.
+        task_status: A list of task statuses to filter by. If None, all tasks are returned.
+
+    Returns:
+        A list of dictionaries containing task names, ids, project ids, and tag ids.
+    """
+    script = Template(
+        dedent("""
+    ${__common_functions__}
+    
+    (() => {
+        let tag = Tag.byIdentifier("${tag_id}");
+        const allowedStatuses = ${task_status};
+
+        if (!tag) {
+            throw "Could not find tag: " + tag_id.toString();
+        }
+        
+        return tag.tasks
+            .filter(task => taskStatusFilter(task, allowedStatuses))
+            .map((task) => {
+                try {
+                    return formatTask(task);
+                } catch (e) {
+                    return null;
+                }
+            }).filter(Boolean);
+    })();
+    """)
+    )
+
+    return evaluate_javascript(
+        script.substitute(
+            __common_functions__=__common_functions__,
+            tag_id=tag_id,
+            task_status=f"[{', '.join([f'"{status}"' for status in task_status])}]" if task_status else "null",
         )
     )
