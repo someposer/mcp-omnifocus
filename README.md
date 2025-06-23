@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server for controlling [OmniFocus](https://www.omnigroup.com/omnifocus) from VS Code, the command line, or any MCP-compatible client. This tool enables automation and management of your OmniFocus tasks, projects, and tags using natural language and programmable interfaces.
 
+<a href="https://glama.ai/mcp/servers/@someposer/mcp-omnifocus">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@someposer/mcp-omnifocus/badge" alt="OmniFocus MCP server" />
+</a>
+
 ## Features
 
 - List all tasks, projects, tags, and perspectives in OmniFocus
